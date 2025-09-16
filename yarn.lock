@@ -83,6 +83,21 @@
     "@eslint/core" "^0.15.2"
     levn "^0.4.1"
 
+"@gltf-transform/core@^4.2.1":
+  version "4.2.1"
+  resolved "https://registry.yarnpkg.com/@gltf-transform/core/-/core-4.2.1.tgz#d6c58839fdee8fb45df52356b9a0d0434ee2716b"
+  integrity sha512-qKhrQ29KJ9K6sz7xGoGRllqPBlROjPJMQPvCLBOfgMPH3S/Ph5E0e6fD5WmwTY5QPyBsDMRqKd1Vl0ncThTXGw==
+  dependencies:
+    property-graph "^3.0.0"
+
+"@gltf-transform/extensions@^4.2.1":
+  version "4.2.1"
+  resolved "https://registry.yarnpkg.com/@gltf-transform/extensions/-/extensions-4.2.1.tgz#f0fdb990ba35c13df244e6fcf3a606c938f6864b"
+  integrity sha512-ieHSJU9qvb3ucWDxgHFcff+C7fLtFPa6G0Wtc/ki7GsN6Rh7o9eoyqi7Ggj2LO4i3ynCwLLPb/onbJKw2fBtsA==
+  dependencies:
+    "@gltf-transform/core" "^4.2.1"
+    ktx-parse "^1.0.1"
+
 "@google/model-viewer@^4.1.0":
   version "4.1.0"
   resolved "https://registry.yarnpkg.com/@google/model-viewer/-/model-viewer-4.1.0.tgz#c1d9e1d633845b7be93c822b570fba28850f4684"
@@ -1557,6 +1572,11 @@ kind-of@^6.0.2:
   resolved "https://registry.yarnpkg.com/kind-of/-/kind-of-6.0.3.tgz#07c05034a6c349fa06e24fa35aa76db4580ce4dd"
   integrity sha512-dcS1ul+9tmeD95T+x28/ehLgd9mENa3LsvDTtzm3vyBEO7RPptvAD+t44WVXaUjTBRcrpFeFlC8WCruUR456hw==
 
+ktx-parse@^1.0.1:
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/ktx-parse/-/ktx-parse-1.1.0.tgz#1077c87776ddabfc32fc01f644f6ad8f8890abf8"
+  integrity sha512-mKp3y+FaYgR7mXWAbyyzpa/r1zDWeaunH+INJO4fou3hb45XuNSwar+7llrRyvpMWafxSIi99RNFJ05MHedaJQ==
+
 levn@^0.4.1:
   version "0.4.1"
   resolved "https://registry.yarnpkg.com/levn/-/levn-0.4.1.tgz#ae4562c007473b932a6200d403268dd2fffc6ade"
@@ -1924,6 +1944,11 @@ promise-worker-transferable@^1.0.4:
   dependencies:
     is-promise "^2.1.0"
     lie "^3.0.2"
+
+property-graph@^3.0.0:
+  version "3.0.0"
+  resolved "https://registry.yarnpkg.com/property-graph/-/property-graph-3.0.0.tgz#c3187a0389a7ec56b8c9207fe3867b2ba3d1e6df"
+  integrity sha512-TnzxUsttmGtw+OiU0LDw+0FlMbJ8vV8pOjyDI7+Kdni4Tj0hW5BFh7TatQu7Y68hcvvFmiFOHilKShsA4R82fA==
 
 punycode@^2.1.0:
   version "2.3.1"

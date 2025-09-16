@@ -238,39 +238,12 @@ export class OpenSCADPreviewProvider {
         
         .content {
             flex: 1;
-            display: grid;
-            grid-template-columns: 400px 1fr;
+            display: flex;
             min-height: 0;
         }
         
-        .code-panel {
-            background-color: var(--vscode-sideBar-background);
-            border-right: 1px solid var(--vscode-panel-border);
-            display: flex;
-            flex-direction: column;
-        }
-        
-        .code-header {
-            padding: 10px 15px;
-            border-bottom: 1px solid var(--vscode-panel-border);
-            font-size: 12px;
-            font-weight: 600;
-            color: var(--vscode-titleBar-activeForeground);
-        }
-        
-        .code-content {
-            flex: 1;
-            background-color: var(--vscode-editor-background);
-            color: var(--vscode-editor-foreground);
-            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-            font-size: 13px;
-            line-height: 1.4;
-            white-space: pre;
-            overflow: auto;
-            padding: 15px;
-        }
-        
         .preview-panel {
+            flex: 1;
             display: flex;
             flex-direction: column;
             background-color: var(--vscode-editor-background);
@@ -331,12 +304,7 @@ export class OpenSCADPreviewProvider {
             max-width: 80%;
         }
         
-        @media (max-width: 768px) {
-            .content {
-                grid-template-columns: 1fr;
-                grid-template-rows: 200px 1fr;
-            }
-        }
+        /* No mobile layout changes needed for full-screen preview */
     </style>
 </head>
 <body>
@@ -344,17 +312,12 @@ export class OpenSCADPreviewProvider {
         <div class="title">🔧 OpenSCAD Preview - ${path.basename(this.uri.fsPath)}</div>
         <div class="toolbar">
             <button id="renderBtn" class="btn">🔄 Render</button>
-            <button id="exportBtn" class="btn" disabled>💾 Export STL</button>
+            <button id="exportBtn" class="btn" disabled>💾 Export OFF</button>
             <span id="status" class="status">Ready</span>
         </div>
     </div>
     
     <div class="content">
-        <div class="code-panel">
-            <div class="code-header">📝 Source Code</div>
-            <div id="code-content" class="code-content">${escapeHtml(scadContent)}</div>
-        </div>
-        
         <div class="preview-panel">
             <div class="preview-header">
                 <span>👀 3D Preview</span>
@@ -384,9 +347,7 @@ export class OpenSCADPreviewProvider {
     </div>
 
     <script nonce="${nonce}" src="${libsUri}/model-viewer.min.js"></script>
-    <script nonce="${nonce}" src="${libsUri}/three.min.js"></script>
-    <script nonce="${nonce}" src="${libsUri}/STLLoader.js"></script>
-    <script nonce="${nonce}" src="${libsUri}/GLTFExporter.js"></script>
+    <script nonce="${nonce}" src="${libsUri}/off-glb-converter.js"></script>
     <script type="module" nonce="${nonce}">
         
         // Track script executions to detect reloading
@@ -415,7 +376,7 @@ export class OpenSCADPreviewProvider {
         
         // Global variables
         let openscadModule = null;
-        let currentSTLData = null;
+        let currentOFFData = null;
         let isRendering = false;
         
         // Get DOM elements
@@ -426,8 +387,10 @@ export class OpenSCADPreviewProvider {
         const loading = document.getElementById('loading');
         const error = document.getElementById('error');
         const renderInfo = document.getElementById('renderInfo');
-        const codeContent = document.getElementById('code-content');
         const placeholder = document.getElementById('preview-placeholder');
+        
+        // Store current SCAD content
+        let currentScadContent = \`${scadContent.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`;
         
         // VS Code API
         const vscode = acquireVsCodeApi();
@@ -605,7 +568,7 @@ export class OpenSCADPreviewProvider {
         async function renderModel() {
             if (!openscadModule || isRendering) return;
             
-            const scadCode = codeContent.textContent;
+            const scadCode = currentScadContent;
             if (!scadCode.trim()) {
                 showError('No OpenSCAD code to render');
                 return;
@@ -625,8 +588,8 @@ export class OpenSCADPreviewProvider {
                 console.log('Writing SCAD code to filesystem...');
                 openscadModule.FS.writeFile('/input.scad', scadCode);
                 
-                // Run OpenSCAD to generate STL
-                const args = ['/input.scad', '--enable=manifold', '-o', '/output.stl'];
+                // Run OpenSCAD to generate OFF
+                const args = ['/input.scad', '--enable=manifold', '-o', '/output.off'];
                 console.log('Running OpenSCAD with args:', args);
                 
                 try {
@@ -639,7 +602,7 @@ export class OpenSCADPreviewProvider {
                 
                 // Check if output file exists
                 try {
-                    const fileExists = openscadModule.FS.analyzePath('/output.stl').exists;
+                    const fileExists = openscadModule.FS.analyzePath('/output.off').exists;
                     console.log('Output file exists:', fileExists);
                     if (!fileExists) {
                         throw new Error('OpenSCAD did not generate output file - compilation may have failed');
@@ -649,17 +612,17 @@ export class OpenSCADPreviewProvider {
                     throw new Error('Failed to verify output file existence');
                 }
                 
-                // Read the generated STL
-                console.log('Reading generated STL file...');
-                const stlData = openscadModule.FS.readFile('/output.stl');
-                console.log('STL file read successfully, size:', stlData.length, 'bytes');
-                currentSTLData = stlData;
+                // Read the generated OFF
+                console.log('Reading generated OFF file...');
+                const offData = openscadModule.FS.readFile('/output.off', { encoding: 'utf8' });
+                console.log('OFF file read successfully, size:', offData.length, 'chars');
+                currentOFFData = offData;
                 
                 const renderTime = Date.now() - startTime;
                 console.log(\`Rendering completed in \${renderTime}ms\`);
                 
-                // Load STL into model-viewer
-                loadSTLIntoViewer(stlData);
+                // Load OFF into model-viewer
+                await loadOFFIntoViewer(offData);
                 
                 status.textContent = 'Render complete';
                 renderInfo.textContent = \`Rendered in \${renderTime}ms\`;
@@ -676,93 +639,53 @@ export class OpenSCADPreviewProvider {
             }
         }
         
-        // Convert STL to GLB and load into model-viewer (following OpenSCAD playground approach)
-        function loadSTLIntoViewer(stlData) {
+        // Convert OFF to GLB and load into model-viewer using gltf-transform
+        async function loadOFFIntoViewer(offData) {
             try {
-                console.log('Converting STL to GLB for model-viewer...');
+                console.log('Converting OFF to GLB for model-viewer...');
                 
-                // Wait for all libraries to be available
-                if (!window.THREE || !window.STLLoader || !window.GLTFExporter) {
-                    console.error('Required libraries not loaded yet');
-                    showError('3D libraries not loaded yet. Please wait and try again.');
-                    return;
-                }
+                // Parse OFF data
+                const polyhedron = parseOff(offData);
+                console.log('OFF parsed successfully, vertices:', polyhedron.vertices.length, 'faces:', polyhedron.faces.length);
                 
-                console.log('All THREE.js libraries loaded successfully');
+                // Export to GLB
+                const glbBlob = await exportGlb(polyhedron);
+                console.log('OFF converted to GLB successfully, size:', glbBlob.size, 'bytes');
                 
-                // Use Three.js to load STL and convert to GLB
-                const loader = new window.STLLoader();
-                const geometry = loader.parse(stlData.buffer);
+                // Create blob URL for the GLB data
+                const url = URL.createObjectURL(glbBlob);
+                console.log('Created GLB blob URL:', url);
                 
-                console.log('STL parsed successfully, vertices:', geometry.getAttribute('position').count);
+                // Set the model source
+                modelViewer.src = url;
                 
-                // Create material and mesh
-                const material = new THREE.MeshStandardMaterial({ 
-                    color: 0x606060,
-                    metalness: 0.1,
-                    roughness: 0.8
-                });
-                const mesh = new THREE.Mesh(geometry, material);
+                // Show the model-viewer, hide placeholder
+                modelViewer.style.display = 'block';
+                placeholder.style.display = 'none';
                 
-                // Center the geometry
-                geometry.center();
-                
-                // Create scene for export
-                const scene = new THREE.Scene();
-                scene.add(mesh);
-                
-                console.log('Scene created with mesh');
-                
-                // Export to GLB format
-                const exporter = new window.GLTFExporter();
-                exporter.parse(scene, (gltf) => {
-                    try {
-                        console.log('STL converted to GLB successfully');
-                        
-                        // Create blob URL for the GLB data
-                        const glbBlob = new Blob([gltf], { type: 'model/gltf-binary' });
-                        const url = URL.createObjectURL(glbBlob);
-                        
-                        console.log('Created GLB blob URL:', url);
-                        
-                        // Set the model source
-                        modelViewer.src = url;
-                        
-                        // Show the model-viewer, hide placeholder
-                        modelViewer.style.display = 'block';
-                        placeholder.style.display = 'none';
-                        
-                        console.log('GLB loaded into model-viewer');
-                    } catch (error) {
-                        console.error('Error creating GLB blob:', error);
-                        showError('Failed to load converted model: ' + error.message);
-                    }
-                }, { binary: true }, (error) => {
-                    console.error('GLB export failed:', error);
-                    showError('Failed to convert model: ' + error.message);
-                });
+                console.log('GLB loaded into model-viewer');
                 
             } catch (error) {
-                console.error('Error converting STL to GLB:', error);
-                showError('Failed to convert STL: ' + error.message);
+                console.error('Error converting OFF to GLB:', error);
+                showError('Failed to convert OFF: ' + error.message);
             }
         }
         
-        // Export STL file
-        function exportSTL() {
-            if (!currentSTLData) return;
+        // Export OFF file
+        function exportOFF() {
+            if (!currentOFFData) return;
             
-            const blob = new Blob([currentSTLData], { type: 'application/octet-stream' });
+            const blob = new Blob([currentOFFData], { type: 'text/plain' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = '${path.basename(this.uri.fsPath, path.extname(this.uri.fsPath))}.stl';
+            a.download = '${path.basename(this.uri.fsPath, path.extname(this.uri.fsPath))}.off';
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
             
-            status.textContent = 'STL exported';
+            status.textContent = 'OFF exported';
         }
         
         // UI Helper functions
@@ -787,7 +710,7 @@ export class OpenSCADPreviewProvider {
         
         // Event listeners
         renderBtn.addEventListener('click', renderModel);
-        exportBtn.addEventListener('click', exportSTL);
+        exportBtn.addEventListener('click', exportOFF);
         
         // Handle messages from extension
         window.addEventListener('message', event => {
@@ -795,7 +718,7 @@ export class OpenSCADPreviewProvider {
             switch (message.type) {
                 case 'update':
                     console.log('Received content update');
-                    codeContent.textContent = message.content;
+                    currentScadContent = message.content;
                     break;
             }
         });
