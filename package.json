@@ -1,0 +1,121 @@
+{
+  "name": "openscad-preview",
+  "displayName": "OpenSCAD Preview",
+  "description": "Live preview for OpenSCAD files",
+  "version": "0.0.1",
+  "license": "MIT",
+  "author": "Your Name",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/vscode-openscad-preview"
+  },
+  "engines": {
+    "vscode": "^1.74.0"
+  },
+  "categories": [
+    "Visualization",
+    "Other"
+  ],
+  "keywords": [
+    "openscad",
+    "3d",
+    "cad",
+    "preview"
+  ],
+  "activationEvents": [
+    "*"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "scad",
+        "aliases": [
+          "OpenSCAD",
+          "scad"
+        ],
+        "extensions": [
+          ".scad",
+          ".openscad"
+        ]
+      }
+    ],
+    "commands": [
+      {
+        "command": "openscad-preview.showPreview",
+        "title": "Show Preview",
+        "category": "OpenSCAD",
+        "icon": "$(open-preview)"
+      }
+    ],
+    "menus": {
+      "editor/title": [
+        {
+          "command": "openscad-preview.showPreview",
+          "when": "resourceExtname == '.scad' || resourceExtname == '.openscad'",
+          "group": "navigation"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "openscad-preview.showPreview",
+          "when": "resourceExtname == '.scad' || resourceExtname == '.openscad'",
+          "group": "navigation"
+        }
+      ],
+      "explorer/context": [
+        {
+          "command": "openscad-preview.showPreview",
+          "when": "resourceExtname == '.scad' || resourceExtname == '.openscad'",
+          "group": "navigation"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "openscad-preview.showPreview"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "OpenSCAD Preview",
+      "properties": {
+        "openscad-preview.autoRefresh": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically refresh preview when file changes"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "yarn run package",
+    "compile": "webpack",
+    "watch": "webpack --watch",
+    "package": "webpack --mode production --devtool hidden-source-map",
+    "compile-tests": "tsc -p . --outDir out",
+    "watch-tests": "tsc -p . -w --outDir out",
+    "pretest": "yarn run compile-tests && yarn run compile && yarn run lint",
+    "lint": "eslint src",
+    "test": "vscode-test"
+  },
+  "devDependencies": {
+    "@types/mocha": "^10.0.10",
+    "@types/node": "22.x",
+    "@types/react": "^19.1.13",
+    "@types/react-dom": "^19.1.9",
+    "@types/vscode": "^1.74.0",
+    "@typescript-eslint/eslint-plugin": "^8.42.0",
+    "@typescript-eslint/parser": "^8.42.0",
+    "@vscode/test-cli": "^0.0.11",
+    "@vscode/test-electron": "^2.5.2",
+    "eslint": "^9.34.0",
+    "ts-loader": "^9.5.4",
+    "typescript": "^5.9.2",
+    "webpack": "^5.101.3",
+    "webpack-cli": "^6.0.1"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  }
+}
